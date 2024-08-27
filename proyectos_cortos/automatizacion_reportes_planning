@@ -1,0 +1,251 @@
+Sub CrearTablaAutomatización()
+    ' Definir variables
+    Dim wsSheet1 As Worksheet
+    Dim wsReporte As Worksheet
+    Dim wbNuevo As Workbook
+    Dim wsAutomatizacion As Worksheet
+    Dim wsInstrucciones As Worksheet
+    Dim lastRowSheet1 As Long
+    Dim lastRowReporte As Long
+    Dim lastCol As Long
+    Dim i As Long, j As Long, k As Long
+    Dim currentRow As Long
+    Dim importNumber As String
+    Dim cantidad As Variant
+    Dim fecha As Variant
+    Dim origen As String
+    Dim upn As String
+    Dim descripcion As String
+    Dim fechaFactura As Variant
+    Dim fechaIngresoPiciz As Variant
+    Dim reporteRow As Range
+    Dim firstReporteRow As Long
+    Dim lastReporteRow As Long
+    Dim columnaLetra As String
+    Dim columnaNumero As Long
+    Dim rutaArchivo As String
+    Dim wbActual As Workbook
+    Dim wbExterno As Workbook
+    Dim wsReporteExterno As Worksheet
+    Dim wsSheet1Externo As Worksheet
+    Dim wsReporteActual As Worksheet
+    Dim wsSheet1Actual As Worksheet
+    Dim rutaArchivoExterno As String
+    Dim archivoExterno As String
+    Dim rutaArchivoNuevoReporte As String
+    Dim archivoNuevoReporte As Workbook
+    Dim hoja As Worksheet
+    Dim existeReporte As Boolean
+    Dim existeSheet1 As Boolean
+    Dim contrasena As String
+    
+    ' Desbloquear el libro
+    contrasena = "TuContrasena"
+    ThisWorkbook.Unprotect Password:=contrasena
+    
+    ' --------------------------------------------------------
+    ' ----- Verificar si generó un reporte anteriormente -----
+    ' --------------------------------------------------------
+    
+    ' Especificar la ruta y el nombre del archivo Nuevo reporte
+    rutaArchivoNuevoReporte = ThisWorkbook.Path & "\Nuevo reporte.xlsx"
+    
+    ' Abrir el archivo externo
+    On Error GoTo NoExisteNuevoReporte
+    
+    Application.DisplayAlerts = False
+    Set archivoNuevoReporte = Workbooks.Open(rutaArchivoNuevoReporte)
+    Application.DisplayAlerts = True
+    MsgBox "Antes de generar un nuevo reporte, borre el archivo 'Nuevo reporte'.", vbExclamation
+    
+    Exit Sub
+    
+NoExisteNuevoReporte:
+    ' Seguir con el proceso
+    
+    ' ----------------------------------------------------
+    ' ----- Traer la información del archivo externo -----
+    ' ----------------------------------------------------
+    
+    ' Buscar algún error
+    On Error GoTo ManejoDeErrores
+    
+    ' Asignar la hoja "Instrucciones" a la variable wsInstrucciones
+    Set wbActual = ThisWorkbook
+    Set wsInstrucciones = ThisWorkbook.Sheets("Instrucciones")
+    
+    ' Leer el valor en la celda F25 y verificar si la celda está vacía
+    rutaArchivoExterno = wsInstrucciones.Range("F25").Value
+    If rutaArchivoExterno = "" Then
+        MsgBox "Escriba el nombre del archivo de donde viene la información en la celda F25.", vbCritical
+        Exit Sub
+    Else
+        archivoExterno = ThisWorkbook.Path & "\" & rutaArchivoExterno & ".xlsx"
+    End If
+    
+    ' Leer el valor en la celda F27 y verificar si la celda está vacía
+    columnaLetra = wsInstrucciones.Range("F27").Value
+    If columnaLetra = "" Then
+        MsgBox "Escriba la primera columna de las fechas de Sheet1 en la celda F27.", vbCritical
+        Exit Sub
+    Else
+        columnaNumero = Columns(columnaLetra & ":" & columnaLetra).Column
+    End If
+    
+    ' Abrir el archivo externo
+    Set wbExterno = Nothing ' Reset wbExterno para asegurar que no haya residuos
+    Set wbExterno = Workbooks.Open(archivoExterno)
+    
+    ' Verificar si las hojas "REPORTE" y "Sheet1" existen antes de asignarlas
+    existeReporte = False
+    existeSheet1 = False
+    
+    ' Recorrer todas las hojas del libro
+    For Each hoja In wbExterno.Sheets
+        ' Verificar si la hoja "REPORTE" existe
+        If hoja.Name = "REPORTE" Then
+            existeReporte = True
+        End If
+        ' Verificar si la hoja "Sheet1" existe
+        If hoja.Name = "Sheet1" Then
+            existeSheet1 = True
+        End If
+    Next hoja
+    
+    ' Mostrar mensajes de error si alguna de las hojas no existe
+    If Not existeReporte Then
+        MsgBox "La hoja 'REPORTE' no existe. Por favor, créela antes de continuar.", vbExclamation
+        Exit Sub
+    End If
+    If Not existeSheet1 Then
+        MsgBox "La hoja 'Sheet1' no existe. Por favor, créela antes de continuar.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Abrir las hojas
+    Set wsReporteExterno = wbExterno.Sheets("REPORTE")
+    Set wsSheet1Externo = wbExterno.Sheets("Sheet1")
+    
+    ' Crear nuevas hojas en el archivo actual
+    Set wsReporteActual = wbActual.Sheets.Add
+    wsReporteActual.Name = "REPORTE"
+    Set wsSheet1Actual = wbActual.Sheets.Add
+    wsSheet1Actual.Name = "Sheet1"
+    
+    ' Asignar las hojas del archivo actual a las variables correspondientes
+    Set wsReporteActual = wbActual.Sheets("REPORTE")
+    Set wsSheet1Actual = wbActual.Sheets("Sheet1")
+    
+    ' Copiar y pegar la información de la hoja "REPORTE"
+    wsReporteExterno.UsedRange.Copy Destination:=wsReporteActual.Range("A1")
+    
+    ' Copiar y pegar la información de la hoja "Sheet1"
+    wsSheet1Externo.UsedRange.Copy Destination:=wsSheet1Actual.Range("A1")
+    
+    ' Cerrar el archivo externo sin guardar cambios
+    wbExterno.Close False
+    
+    ' Guardar las hojas en otras variables
+    Set wsSheet1 = ThisWorkbook.Sheets("Sheet1")
+    Set wsReporte = ThisWorkbook.Sheets("REPORTE")
+        
+    ' Verificar si las hojas no están vacías
+    lastRowSheet1 = wsSheet1.Cells(wsSheet1.Rows.Count, 1).End(xlUp).Row
+    lastRowReporte = wsReporte.Cells(wsReporte.Rows.Count, 1).End(xlUp).Row
+    If lastRowSheet1 <= 1 Or lastRowReporte <= 2 Then
+        ' Deshacer los cambios hechos en el archivo
+        Application.DisplayAlerts = False
+        Sheets("REPORTE").Delete
+        Sheets("Sheet1").Delete
+        Application.DisplayAlerts = True
+        MsgBox "Las hojas 'REPORTE' y 'Sheet1' deben contener información antes de continuar.", vbCritical
+        Exit Sub
+    End If
+    
+    ' Crear un nuevo archivo de Excel
+    Set wbNuevo = Workbooks.Add
+    Set wsAutomatizacion = wbNuevo.Sheets(1)
+    wsAutomatizacion.Name = "Automatización"
+
+    ' Escribir headers en "Automatización"
+    With wsAutomatizacion
+        .Cells(1, 1).Value = "Import Number"
+        .Cells(1, 2).Value = "Origen"
+        .Cells(1, 3).Value = "UPN"
+        .Cells(1, 4).Value = "Descripción"
+        .Cells(1, 5).Value = "Cantidad"
+        .Cells(1, 6).Value = "Fecha Factura"
+        .Cells(1, 7).Value = "Fecha ingreso mercancia Alpasar (PICIZ)"
+        .Cells(1, 8).Value = "Fecha"
+    End With
+
+    currentRow = 2 ' Iniciar la fila para escribir en Automatización
+
+    ' Obtener el número de columnas en Sheet1
+    lastCol = wsSheet1.Cells(1, wsSheet1.Columns.Count).End(xlToLeft).Column
+
+    ' Recorrer cada fila de "Sheet1" desde la fila 2
+    For i = 2 To lastRowSheet1
+        importNumber = wsSheet1.Cells(i, 1).Value
+        fecha = ""
+
+        ' Buscar todas las filas correspondientes en "REPORTE" para este import number
+        Set reporteRow = wsReporte.Columns(1).Find(What:=importNumber, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
+
+        If Not reporteRow Is Nothing Then
+            firstReporteRow = reporteRow.Row
+            lastReporteRow = wsReporte.Cells(wsReporte.Rows.Count, reporteRow.Column).End(xlUp).Row
+
+            For j = firstReporteRow To lastReporteRow
+                If wsReporte.Cells(j, 1).Value = importNumber Then
+                    origen = wsReporte.Cells(j, 3).Value
+                    upn = wsReporte.Cells(j, 6).Value
+                    descripcion = wsReporte.Cells(j, 7).Value
+                    cantidad = wsReporte.Cells(j, 8).Value
+                    fechaFactura = wsReporte.Cells(j, 9).Value
+                    fechaIngresoPiciz = wsReporte.Cells(j, 13).Value
+
+                    ' Buscar la fecha y la cantidad correspondiente en Sheet1
+                    For k = columnaNumero To lastCol
+                        If wsSheet1.Cells(i, k).Value <> "" Then
+                            fecha = wsSheet1.Cells(1, k).Value
+                            cantidad = wsSheet1.Cells(i, k).Value
+
+                            ' Escribir datos en "Automatización"
+                            With wsAutomatizacion
+                                .Cells(currentRow, 1).Value = importNumber
+                                .Cells(currentRow, 2).Value = origen
+                                .Cells(currentRow, 3).Value = upn
+                                .Cells(currentRow, 4).Value = descripcion
+                                .Cells(currentRow, 5).Value = cantidad
+                                .Cells(currentRow, 6).Value = fechaFactura
+                                .Cells(currentRow, 7).Value = fechaIngresoPiciz
+                                .Cells(currentRow, 8).Value = fecha
+                            End With
+
+                            currentRow = currentRow + 1 ' Mover a la siguiente fila para escribir en Automatización
+                        End If
+                    Next k
+                End If
+            Next j
+        End If
+    Next i
+
+    ' Guardar el archivo nuevo en la misma ruta del archivo actual
+    wbNuevo.SaveAs ThisWorkbook.Path & "\Nuevo reporte.xlsx"
+    
+    ' Deshacer los cambios hechos en el archivo
+    wbActual.Sheets("REPORTE").Delete
+    wbActual.Sheets("Sheet1").Delete
+   
+   ' Volver a bloquear el libro
+    wbActual.Protect Password:=contraseña, Structure:=True, Windows:=False
+   
+    ' Mensaje de éxito
+    MsgBox "El reporte se creó exitosamente.", vbInformation
+
+    Exit Sub
+
+ManejoDeErrores:
+    MsgBox "Ocurrió un error: " & Err.Description, vbCritical
+End Sub
