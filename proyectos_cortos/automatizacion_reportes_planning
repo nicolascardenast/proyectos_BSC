@@ -56,7 +56,7 @@ Sub CrearTablaAutomatización()
     Application.DisplayAlerts = False
     Set archivoNuevoReporte = Workbooks.Open(rutaArchivoNuevoReporte)
     Application.DisplayAlerts = True
-    MsgBox "Antes de generar un nuevo reporte, borre el archivo 'Nuevo reporte'.", vbExclamation
+    MsgBox "Antes de generar un nuevo reporte, borre el archivo 'Nuevo reporte', cambie su nombre o muévalo a otra carpeta.", vbExclamation
     
     Exit Sub
     
@@ -126,6 +126,10 @@ NoExisteNuevoReporte:
     Set wsReporteExterno = wbExterno.Sheets("REPORTE")
     Set wsSheet1Externo = wbExterno.Sheets("Sheet1")
     
+    ' ----------------------------------------------------
+    ' ----- Leer la información del archivo externo ------
+    ' ----------------------------------------------------
+    
     ' Crear nuevas hojas en el archivo actual
     Set wsReporteActual = wbActual.Sheets.Add
     wsReporteActual.Name = "REPORTE"
@@ -162,6 +166,10 @@ NoExisteNuevoReporte:
         Exit Sub
     End If
     
+    ' ----------------------------------------------------
+    ' ------------- Generar el nuevo reporte -------------
+    ' ----------------------------------------------------
+    
     ' Crear un nuevo archivo de Excel
     Set wbNuevo = Workbooks.Add
     Set wsAutomatizacion = wbNuevo.Sheets(1)
@@ -176,7 +184,7 @@ NoExisteNuevoReporte:
         .Cells(1, 5).Value = "Cantidad"
         .Cells(1, 6).Value = "Fecha Factura"
         .Cells(1, 7).Value = "Fecha ingreso mercancia Alpasar (PICIZ)"
-        .Cells(1, 8).Value = "Fecha"
+        .Cells(1, 8).Value = "Fecha Disponibilidad"
     End With
 
     currentRow = 2 ' Iniciar la fila para escribir en Automatización
@@ -205,11 +213,10 @@ NoExisteNuevoReporte:
                     fechaFactura = wsReporte.Cells(j, 9).Value
                     fechaIngresoPiciz = wsReporte.Cells(j, 13).Value
 
-                    ' Buscar la fecha y la cantidad correspondiente en Sheet1
+                    ' Buscar la fecha de disponibilidad correcta en Sheet1
                     For k = columnaNumero To lastCol
                         If wsSheet1.Cells(i, k).Value <> "" Then
                             fecha = wsSheet1.Cells(1, k).Value
-                            cantidad = wsSheet1.Cells(i, k).Value
 
                             ' Escribir datos en "Automatización"
                             With wsAutomatizacion
